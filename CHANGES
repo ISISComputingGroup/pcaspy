@@ -1,7 +1,22 @@
 
 .. py:currentmodule:: pcaspy
 
-0.7.3 (XX-03-2019)
+0.8.1 (15-03-2024)
+------------------
+    * Fixed asyn write crash, which was introduced in 0.8.0. (Issue #95)
+    * Building process can use an out-of-tree pcas module given by *PCAS* environment variable.
+
+0.8.0 (27-03-2023)
+------------------
+    * Added optional argument *timestamp* to :meth:`Driver.setParam`. (Issue #54)
+    * Added logging of CA client host and user names in *pcaspy.SimplePV.writeValue* logger. (Issue #72)
+      To enable it::
+
+        logging.getLogger('pcaspy.SimplePV.writeValue').setLevel(logging.INFO)
+
+    * Migrated from travis CI to github actions.
+
+0.7.3 (15-10-2020)
 ------------------
     * Fixed alarm/severity checking for short type. (Issue #62)
 
@@ -14,7 +29,7 @@
 0.7.1 (12-01-2018)
 ------------------
     * Fixed spurious value update after startup. (Issue #50)
-    * Mitigated the race condition in :math:`Driver.updatePV`. It could cause one event to fire twice in rare cases. This is not a total fix but good enough. (PR #49)
+    * Mitigated the race condition in :meth:`Driver.updatePV`. It could cause one event to fire twice in rare cases. This is not a total fix but good enough. (PR #49)
     * Changed :meth:`SimplePV.writeValue` to post the update event only on the this specific PV. (Issue #48)
     * Changed :meth:`Driver.setParamInfo` and :meth:`Driver.setParamEnums` not to call meth:`Driver.updatePVs`, and leave that to the user.
 
@@ -101,8 +116,7 @@
     * Added access security control
         access security control file can be loaded using :meth:`SimpleServer.initAccessSecurityFile`.
         The loaded rules can then be assigned to PV's *asg* field.
-        `example/access_control.py` provides an example and better explained in UserDocuments
-        https://code.google.com/p/pcaspy/wiki/UserDocuments#Example_5:_Access_Security_Control
+        `example/access_control.py` provides an example and better explained in :ref:`tutorial-access-security-control`.
 
     * Added new type char. 
         It is used to represent a long string (>40 chars). And it behaves just like string parameters in driver.
@@ -112,12 +126,12 @@
         The timestamp is set at each setParam call with new value different to current value.
     
     * Added alarm/severity info.
-        For *enum* type PV, the severity is configured by its *states* field.
-        It is a list of severity states, which can be NO_ALARM, MINOR_ALARM, MAJOR_ALARM, INVALID_ALARM.
-        If current state's severity is other than NO_ALARM, alarm is STATE_ALARM.
-        For *int* or *float* type PV, the alarm state is configured by its *low*,*high*,*lolo*,*hihi* fields,
-        in analogue to EPICS database.
-        `example/alarm_severity` provides an example.
+        * For *enum* type PV, the severity is configured by its *states* field.
+          It is a list of severity states, which can be NO_ALARM, MINOR_ALARM, MAJOR_ALARM, INVALID_ALARM.
+          If current state's severity is other than NO_ALARM, alarm is STATE_ALARM.
+        * For *int* or *float* type PV, the alarm state is configured by its *low*, *high*, *lolo*, *hihi* fields,
+          in analogue to EPICS database.
+        * `example/alarm_severity` provides an example.
 
 0.3 (21-09-2011)
 ----------------

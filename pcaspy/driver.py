@@ -1,6 +1,9 @@
 from . import cas
 from .alarm import Severity, Alarm
-import collections
+try:
+    from collections.abc import Iterable
+except ImportError:  # python < 3
+    from collections import Iterable
 import operator
 import threading
 import time
@@ -67,7 +70,7 @@ DriverBase = DriverType(str('DriverBase'), (), {
 class Driver(DriverBase):
     """
     This class reacts to PV's read/write requests. The default behavior is to accept any value of a write request
-    and return it to a read request, an echo alike.
+    and return it to a read request, an alike echo.
 
     To specify the behavior, override methods :meth:`read` and :meth:`write` in a derived class.
     """
@@ -120,16 +123,18 @@ class Driver(DriverBase):
         self.setParam(reason, value)
         return True
 
-    def setParam(self, reason, value):
+    def setParam(self, reason, value, timestamp=None):
         """set PV value and request update
 
         :param str reason: PV base name
         :param value: PV new value
+        :param pcaspy.cas.epicsTimeStamp timestamp: PV time stamp
 
         Store the PV's new value if it is indeed different from the old.
         For list and numpy array, a copy will be made.
         This new value will be pushed to registered client the next time when :meth:`updatePVs` is called.
-        The timestamp will be updated to the current time anyway.
+        The PV's modification time will be updated to *timestamp*. If *timestamp* is omitted, the current
+        time is applied.
 
         Alarm and severity status are updated as well. For numeric type, the alarm/severity is determined as the
         following:
@@ -147,6 +152,8 @@ class Driver(DriverBase):
         For enumerate type, the alarm severity is defined by field *states*. And if severity is other than NO_ALARM,
         the alarm status is STATE_ALARM.
 
+        .. note:: The *timestamp*, if given, must be of :class:`pcaspy.cas.epicsTimeStamp` type.
+
         """
         # make a copy of mutable objects, list, numpy.ndarray
         if isinstance(value, list):
@@ -157,7 +164,9 @@ class Driver(DriverBase):
         pv = manager.pvs[self.port][reason]
         self.pvDB[reason].mask |= pv.info.checkValue(value)
         self.pvDB[reason].value = value
-        self.pvDB[reason].time = cas.epicsTimeStamp()
+        if timestamp is None:
+            timestamp = cas.epicsTimeStamp()
+        self.pvDB[reason].time = timestamp
         if self.pvDB[reason].mask:
             self.pvDB[reason].flag = True
         # check whether alarm/severity update is needed
@@ -479,7 +488,7 @@ class PVInfo(object):
         :param limit: numeric scalar
         :param op: comparision operators, le, ge etc
         """
-        if isinstance(value, collections.Iterable):
+        if isinstance(value, Iterable):
             return any(op(v, limit) for v in value)
         else:
             return op(value, limit)
@@ -504,7 +513,7 @@ class SimplePV(cas.casPV):
         # scan thread
         if self.info.scan > 0:
             self.tid = threading.Thread(target=self.scan)
-            self.tid.setDaemon(True)
+            self.tid.daemon = True
             self.tid.start()
 
     def scan(self):
@@ -529,7 +538,7 @@ class SimplePV(cas.casPV):
     def interestDelete(self):
         self.interest = False
 
-    def writeValue(self, gddValue):
+    def writeValue(self, client, gddValue):
         # get driver object
         driver = manager.driver.get(self.info.port)
         if not driver:
@@ -537,6 +546,10 @@ class SimplePV(cas.casPV):
                 warning('%s: No driver is registered for port %s', self.info.reason, self.info.port)
             return cas.S_casApp_undefined
         # call out driver support
+        logging.getLogger('pcaspy.SimplePV.writeValue').\
+                info('%s: %s %s  old=%s new=%s',
+                     self.info.reason, client.host, client.user,
+                     driver.getParam(self.info.reason), gddValue.get())
         success = driver.write(self.info.reason, gddValue.get())
         if success is False:
             logging.getLogger('pcaspy.SimplePV.writeValue').\
@@ -551,7 +564,7 @@ class SimplePV(cas.casPV):
         if not cas.EPICS_HAS_WRITENOTIFY and self.info.asyn:
             return self.writeNotify(context, value)
         else:
-            self.writeValue(value)
+            self.writeValue(context, value)
             return cas.S_casApp_success
 
     def writeNotify(self, context, value):
@@ -562,9 +575,9 @@ class SimplePV(cas.casPV):
         # do asynchronous only if PV supports
         if self.info.asyn:
             # register async write io
-            self.startAsyncWrite(context)
+            self.startAsyncWrite(context.ctx)
             # call out driver
-            success = self.writeValue(value)
+            success = self.writeValue(context, value)
             # if not successful, clean the async write io
             # pass status S_cas_success instead of cas.S_casApp_canceledAsyncIO
             # so that client wont see error message.
@@ -574,7 +587,7 @@ class SimplePV(cas.casPV):
             return cas.S_casApp_asyncCompletion
         else:
             # call out driver
-            success = self.writeValue(value)
+            success = self.writeValue(context, value)
             return cas.S_casApp_success
 
     def updateValue(self, dbValue):
@@ -781,7 +794,7 @@ class SimpleServer(cas.caServer):
 
         The data type supported has been greatly reduced from C++ PCAS to match Python native types.
         Numeric types are 'float' and 'int', corresponding to DBF_DOUBLE and DBF_LONG of EPICS IOC.
-        The display limits are defined by *lolim* abd *hilim*.
+        The display limits are defined by *lolim* and *hilim*.
         The alarm limits are defined by *low*, *high*, *lolo*, *hihi*.
 
         Fixed width string, 40 characters as of EPICS 3.14, is of type 'string'.

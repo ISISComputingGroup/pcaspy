@@ -15,26 +15,19 @@ Packages for Anaconda can be installed via::
 Wheel
 ~~~~~
 The binary packages are distributed at `PyPI <https://pypi.python.org/pypi/pcaspy>`_.
-They have EPICS 3.14.12.6 libraries statically builtin. Make sure you have `pip <https://pypi.python.org/pypi/pip>`_ and
+They have EPICS 3.14.12.8 libraries statically builtin. Make sure you have `pip <https://pypi.python.org/pypi/pip>`_ and
 `wheel <https://pypi.python.org/pypi/wheel>`_  installed, and run::
 
-    $ sudo pip install pcaspy # macOS
+    $ sudo pip install pcaspy # macOS and Linux
     > C:\Python27\Scripts\pip.exe install pcaspy :: Windows
 
 
-.. note:: On Windows, if you see error message "The program can't start because MSVCRxxx.dll is missing from your computer." when importing pcaspy, you might need to install the proper `Visual C++ Redistributable <https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads>`_.
-
-Egg
-~~~
-PyPI does not allow upload linux-specific wheels package, yet (as of 2014).
-The old *egg* format is used then::
-
-    $ sudo easy_install pcaspy
-
-Or install only for the current user::
-
-    $ easy_install --user pcaspy
-
+.. note::
+  * The binary packages are built by CI/CD at the release time. The supported Python versions are up to the most recent release at that time point.
+    That means newer Python released after that point will not have binary packages. In that case please build from source, or stay with an older Python
+    or raise an issue to request a new build.
+  * On Windows, if you see error message "The program can't start because MSVCRxxx.dll is missing from your computer." when importing pcaspy,
+   you might need to install the proper `Visual C++ Redistributable <https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads>`_.
 
 Source
 ------
@@ -77,8 +70,10 @@ Here is a short guide,
     |         | 64bit | windows-x64-static |
     +---------+-------+--------------------+
     |         | PPC   | darwin-ppcx86      |
-    |  OS X   +-------+--------------------+
-    |         | Intel | darwin-x86         |
+    |         +-------+--------------------+
+    |  macOS  | Intel | darwin-x86         |
+    |         +-------+--------------------+
+    |         | ARM   | darwin-aarch64     |
     +---------+-------+--------------------+
 
 - From EPICS 7 onwards, PCAS library is not any more distributed in EPICS base. In the official document, it
@@ -88,9 +83,16 @@ Here is a short guide,
   - Download source from https://github.com/epics-modules/pcas/releases
   - Unpack its contents to <EPICS_BASE>/modules/pcas
   - Create <EPICS_BASE>/modules/Makefile.local, with the following contents::
+  
+        SUBMODULES += pcas
+        pcas_DEPEND_DIRS = libcom
 
-    SUBMODULES += pcas
-    pcas_DEPEND_DIRS = libcom
+  - As long as v4.13.2 is the latest release of pcas, add ``-include $(TOP)/../RELEASE.$(EPICS_HOST_ARCH).local``
+    to the end of <EPICS_BASE>/modules/pcas/configure/RELEASE.
+
+  If PCAS library is built as a separate module, its path has to be defined::
+
+        export PCAS=<pcas_module_path>
 
 - Run ``make``.
 
@@ -104,7 +106,7 @@ Here is a short guide,
           +------------------+-----------------------+
           | 3.3 - 3.4        |  2010                 |
           +------------------+-----------------------+
-          | 3.5 - 3.6        |  2015                 |
+          | 3.5 - 3.12       |  2015                 |
           +------------------+-----------------------+
 
           Mismatching may cause crashes!
@@ -168,7 +170,7 @@ Wheel
     $ python setup.py bdist_wheel
 
 RPM
-^^^
+~~~
 The spec file *python-pcaspy.spec* is included. Get the source tarball either from PyPI or create it by
 ``python setup.py sdist``, and run::
 

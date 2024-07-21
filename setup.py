@@ -8,14 +8,17 @@ import platform
 import sys
 import shutil
 import subprocess
+import filecmp
 
 # Use setuptools to include build_sphinx, upload/sphinx commands
 try:
     from setuptools import setup, Extension
+    from setuptools.command.build_py import build_py as _build_py
 except:
     from distutils.core import setup, Extension
+    from distutils.command.build_py import build_py as _build_py
 
-from distutils.command.build_py import build_py as _build_py
+
 import epicscorelibs.path
 import epicscorelibs.config
 import swig
@@ -35,17 +38,32 @@ def load_module(name, location):
         import imp
         module = imp.load_source(name, location)
     else:
-        import importlib
+        import importlib.util
         spec = importlib.util.spec_from_file_location(name, location)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
     return module
+
+# check wether all paths exist
+def paths_exist(paths):
+    for path in paths:
+        if not os.path.exists(path):
+            return False
+    return True
 
 # define EPICS base path and host arch
 EPICSBASE = epicscorelibs.path.base_path
 HOSTARCH  = epicscorelibs.config.get_config_var("EPICS_HOST_ARCH")
 
 PRE315 = False
+
+# check whether PCAS is part of EPICS base installation
+PCAS = None
+if not os.path.exists(os.path.join(epicscorelibs.path.include_path, 'casdef.h')):
+    PCAS = os.environ.get('PCAS')
+    if not PCAS:
+        raise IOError('It looks like PCAS module is not part of EPICS base installation. '
+                      'Please define PCAS environment variable to the module path.')
 
 # common libraries to link
 libraries = ['cas', 'ca', 'gdd', 'Com']
@@ -79,8 +97,9 @@ elif UNAME == 'Windows':
             if not os.path.exists(dllpath):
                 static = True
                 break
-            shutil.copy(dllpath,
-                        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pcaspy'))
+            dll_dest = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pcaspy', dll)
+            if not os.path.exists(dll_dest) or not filecmp.cmp(dllpath, dll_dest):
+                shutil.copy(dllpath, dll_dest)
         macros += [('_CRT_SECURE_NO_WARNINGS', 'None'), ('_CRT_NONSTDC_NO_DEPRECATE', 'None'), ('EPICS_CALL_DLL', '')]
         cflags += ['/Z7']
         CMPL = 'msvc'
@@ -107,14 +126,24 @@ elif UNAME == 'Windows':
         CMPL = 'gcc'
 elif UNAME == 'Darwin':
     CMPL = 'clang'
-    extra_objects = [os.path.join(epicscorelibs.path.lib_path, 'lib%s.a'%lib) for lib in libraries]
-    libraries = []
+    if not SHARED:
+        extra_objects = [os.path.join(epicscorelibs.path.lib_path, 'lib%s.a'%lib) for lib in libraries]
+        if paths_exist(extra_objects):
+            libraries = []
+        else:
+            extra_objects = []
+            SHARED = True
 elif UNAME == 'Linux':
-    # necessary when EPICS is statically linked
-    extra_objects = [os.path.join(epicscorelibs.path.lib_path, 'lib%s.a'%lib) for lib in libraries]
-    libraries = ['rt']
-    if subprocess.call('nm -u %s | grep -q rl_' % os.path.join(epicscorelibs.path.lib_path, 'libCom.a'), shell=True) == 0:
-        libraries += ['readline']
+    if not SHARED:
+        extra_objects = [os.path.join(epicscorelibs.path.lib_path, 'lib%s.a'%lib) for lib in libraries]
+        if paths_exist(extra_objects):
+            # necessary when EPICS is statically linked
+            libraries = ['rt']
+            if subprocess.call('nm -u %s | grep -q rl_' % os.path.join(epicscorelibs.path.lib_path, 'libCom.a'), shell=True) == 0:
+                libraries += ['readline']
+        else:
+            extra_objects = []
+            SHARED = True
     CMPL = 'gcc'
 elif UNAME == 'SunOS':
     # OS_CLASS used by EPICS
@@ -123,22 +152,32 @@ elif UNAME == 'SunOS':
 else:
     raise IOError("Unsupported OS {0}".format(UNAME))
 
+include_dirs = [ epicscorelibs.path.include_path]
+
+library_dirs = [ epicscorelibs.path.lib_path ]
+
+if PCAS:
+    include_dirs.append(os.path.join(PCAS, 'include'))
+    library_dirs.append(os.path.join(PCAS, 'lib', HOSTARCH))
+
 cas_module = Extension('pcaspy._cas',
                        sources  =[os.path.join('pcaspy','casdef.i'),
                                   os.path.join('pcaspy','pv.cpp'),
                                   os.path.join('pcaspy','channel.cpp'),],
                        swig_opts=['-c++','-threads','-nodefaultdtor','-I%s'% epicscorelibs.path.include_path],
                        extra_compile_args=cflags,
-                       include_dirs = [ epicscorelibs.path.include_path],
-                       library_dirs = [ epicscorelibs.path.lib_path,],
+                       include_dirs = include_dirs,
+                       library_dirs = library_dirs,
                        libraries = libraries,
                        extra_link_args = lflags,
                        extra_objects = extra_objects,
                        define_macros = macros,
                        undef_macros  = umacros,)
-# other *NIX linker has runtime library path option
-if UNAME not in ['WIN32', 'Darwin', 'Linux']:
-    cas_module.runtime_library_dirs += epicscorelibs.path.lib_path,
+# use runtime library path option if linking share libraries on *NIX
+if UNAME not in ['WIN32'] and SHARED:
+    cas_module.runtime_library_dirs += [epicscorelibs.path.lib_path]
+    if PCAS:
+        cas_module.runtime_library_dirs += [epicscorelibs.path.lib_path]
 
 long_description = open('README.rst').read()
 _version = load_module('_version', 'pcaspy/_version.py')

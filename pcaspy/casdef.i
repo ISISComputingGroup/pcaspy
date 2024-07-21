@@ -57,16 +57,16 @@ public:
     caServer();
     virtual ~caServer()=0;
 
-    virtual pvExistReturn pvExistTest ( const casCtx & ctx, 
+    virtual pvExistReturn pvExistTest ( const casCtx & ctx,
         const caNetAddr & clientAddress, const char * pPVAliasName );
 
     virtual pvAttachReturn pvAttach ( const casCtx &ctx,
         const char *pPVAliasName );
 
     casEventMask registerEvent ( const char *pName );
-    casEventMask valueEventMask () const; // DBE_VALUE 
-    casEventMask logEventMask () const;  // DBE_LOG 
-    casEventMask alarmEventMask () const; // DBE_ALARM 
+    casEventMask valueEventMask () const; // DBE_VALUE
+    casEventMask logEventMask () const;  // DBE_LOG
+    casEventMask alarmEventMask () const; // DBE_ALARM
 
     void setDebugLevel ( unsigned level );
     unsigned getDebugLevel () const;
@@ -87,13 +87,13 @@ public:
     virtual ~casPV ();
 
     virtual void show ( unsigned level ) const;
-   
+
     virtual caStatus interestRegister ();
     virtual void interestDelete ();
-    
+
     virtual caStatus beginTransaction ();
     virtual void endTransaction ();
-    
+
     virtual caStatus read (const casCtx &ctx, gdd &prototype);
     virtual caStatus write (const casCtx &ctx, const gdd &value);
     #if EPICS_VERSION > 3 || \
@@ -106,15 +106,22 @@ public:
     #endif
 
     virtual aitEnum bestExternalType () const;
-    
+
     virtual unsigned maxDimension () const; // return zero if scalar
     virtual aitIndex maxBound ( unsigned dimension ) const;
-    
+
     virtual void destroy ();
 
     virtual const char * getName () const = 0;
-    
+
     caServer * getCAS () const;
+};
+
+struct casClientInfo {
+    %immutable;
+    const char *user;
+    const char *host;
+    const casCtx *ctx;
 };
 
 class PV : public casPV {
@@ -136,6 +143,11 @@ public:
     virtual caStatus getUnits(gdd &units);
     virtual caStatus getEnums(gdd &enums);
 
+    virtual caStatus write (const casClientInfo &client, const gdd &value);
+    #if EPICS_HAS_WRITENOTIFY == 1
+    virtual caStatus writeNotify (const casClientInfo &client, const gdd &value);
+    #endif
+
     bool setAccessSecurityGroup(const char *);
 
     void startAsyncWrite(const casCtx &ctx);
@@ -149,13 +161,13 @@ class casChannel {
 public:
     casChannel (const casCtx & ctx);
     virtual ~casChannel ();
-   
-    virtual void setOwner ( const char * const pUserName, 
+
+    virtual void setOwner ( const char * const pUserName,
         const char * const pHostName );
 
     virtual bool readAccess () const;
     virtual bool writeAccess () const;
-    
+
     virtual bool confirmationRequested () const;
 
     virtual caStatus beginTransaction ();

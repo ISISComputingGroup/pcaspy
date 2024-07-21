@@ -6,15 +6,21 @@
 #include <caeventmask.h>
 #include <asLib.h>
 
-class PV; 
+class PV;
 
 class AsyncWriteIO : public casAsyncWriteIO {
     public:
-        AsyncWriteIO(const casCtx & ctxIn,  PV & pvIn); 
+        AsyncWriteIO(const casCtx & ctxIn,  PV & pvIn);
         ~AsyncWriteIO();
     private:
-        PV & pv; 
-}; 
+        PV & pv;
+};
+
+struct casClientInfo {
+    const char *user;
+    const char *host;
+    const casCtx *ctx;
+};
 
 class PV : public casPV {
     public:
@@ -37,33 +43,36 @@ class PV : public casPV {
         virtual caStatus getUnits(gdd &units) {return S_casApp_success;};
         virtual caStatus getEnums(gdd &enums) {return S_casApp_success;};
 
+        virtual caStatus write(const casClientInfo &client, const gdd &gddValue) {return S_casApp_noSupport;};
+        virtual caStatus writeNotify(const casClientInfo &client, const gdd &gddValue) {return S_casApp_noSupport;};
+
         /* Post value/alarm change event */
         caStatus postEvent(int mask, gdd &value);
 
-        /* Server library calls this function when all channel are disconnected 
+        /* Server library calls this function when all channel are disconnected
          * or server is shutting down.
          * The base class executes "delete this" by default.
          *
-         * We want PV to exist through the lifetime of application, 
+         * We want PV to exist through the lifetime of application,
          * this is a no-op method. The PV instance is deleted by explicitly
          * calling delete.
          */
         void destroy();
 
         /* Async write */
-        void startAsyncWrite(const casCtx & ctx); 
-        bool hasAsyncWrite() {return pAsyncWrite != NULL;}; 
-        void endAsyncWrite(caStatus status); 
-        void removeAsyncWrite(); 
+        void startAsyncWrite(const casCtx & ctx);
+        bool hasAsyncWrite() {return pAsyncWrite != NULL;};
+        void endAsyncWrite(caStatus status);
+        void removeAsyncWrite();
 
         /* Access security group */
         ASMEMBERPVT getAccessSecurityGroup() { return member; }
-        bool setAccessSecurityGroup(const char *asgName); 
+        bool setAccessSecurityGroup(const char *asgName);
 
-        casChannel * createChannel ( const casCtx &ctx, 
-                                    const char * const pUserName, 
-                                    const char * const pHostName); 
-    
+        casChannel * createChannel ( const casCtx &ctx,
+                                    const char * const pUserName,
+                                    const char * const pHostName);
+
     private:
         volatile AsyncWriteIO * pAsyncWrite;
         /* application function table */

@@ -27,7 +27,7 @@ Reference
 
     .. automethod:: getParam(reason)
 
-    .. automethod:: setParam(reason)
+    .. automethod:: setParam(reason, value, timestamp=None)
 
     .. automethod:: setParamStatus(reason, alarm, severity)
 
@@ -57,5 +57,41 @@ Reference
 
     .. automethod:: stop()
 
+.. module:: pcaspy.cas
+
+.. attribute:: POSIX_TIME_AT_EPICS_EPOCH
+
+   POSIX time at the EPICS epoch, 00:00:00 Jan. 1, 1990
+
+:class:`epicsTimeStamp`
+-----------------------
+.. class:: epicsTimeStamp
+   EPICS time stamp.
+
+   .. attribute:: secPastEpoch
+
+      seconds since 0000 Jan 1, 1990
+
+   .. attribute:: nsec
+
+      nanoseconds within second
+
+   .. method:: epicsTimeStamp()
+
+      Current timestamp
+
+   .. method:: epicsTimeStamp(secPastEpoch, nsec)
+      :noindex:
+
+      Timestamp at the given time point
+
+   .. staticmethod:: fromPosixTimeStamp(timestamp)
+
+      Convert from a POSIX timestamp in seconds as a floating point number.
+
+   .. staticmethod:: fromPosixTimeStamp(sec, nsec)
+      :noindex:
+
+      Convert from a POSIX timestamp.
 
 .. py:currentmodule:: pcaspy
