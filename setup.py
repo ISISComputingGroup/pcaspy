@@ -87,13 +87,27 @@ elif UNAME == 'Windows':
     # MSVC compiler
     static = False
     if HOSTARCH in ['win32-x86', 'windows-x64', 'win32-x86-debug', 'windows-x64-debug']:
-        dlls = ['cas.dll', 'ca.dll', 'gdd.dll', 'Com.dll']
-        if PRE315:
-            dlls += ['dbIoc.dll', 'dbStaticIoc.dll', 'asIoc.dll']
+        core_dlls = ["ca.dll", "Com.dll"]
+        if PCAS is None:
+            core_dlls += ['cas.dll', 'gdd.dll']
+            pcas_dlls = []
         else:
-            dlls += ['dbCore.dll']
-        for dll in dlls:
+            pcas_dlls = ['cas.dll', 'gdd.dll']
+
+        if PRE315:
+            core_dlls += ['dbIoc.dll', 'dbStaticIoc.dll', 'asIoc.dll']
+        else:
+            core_dlls += ['dbCore.dll']
+        for dll in core_dlls:
             dllpath = os.path.join(epicscorelibs.path.lib_path, dll)
+            if not os.path.exists(dllpath):
+                static = True
+                break
+            dll_dest = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pcaspy', dll)
+            if not os.path.exists(dll_dest) or not filecmp.cmp(dllpath, dll_dest):
+                shutil.copy(dllpath, dll_dest)
+        for dll in pcas_dlls:
+            dllpath = os.path.join(PCAS, "bin", HOSTARCH, dll)
             if not os.path.exists(dllpath):
                 static = True
                 break
