@@ -16,6 +16,10 @@ except:
     from distutils.core import setup, Extension
 
 from distutils.command.build_py import build_py as _build_py
+import epicscorelibs.path
+import epicscorelibs.config
+import swig
+os.environ["PATH"] += os.pathsep + swig.BIN_DIR
 
 # build_py runs before build_ext so that swig generated module is not copied
 # See http://bugs.python.org/issue7562
@@ -38,26 +42,10 @@ def load_module(name, location):
     return module
 
 # define EPICS base path and host arch
-EPICSBASE = os.environ.get("EPICS_BASE")
-if not EPICSBASE:
-    EPICSROOT = os.environ.get("EPICS")
-    if EPICSROOT:
-        EPICSBASE = os.path.join(EPICSROOT, 'base')
-if not EPICSBASE:
-    raise IOError("Please define EPICS_BASE environment variable")
-if not os.path.exists(EPICSBASE):
-    raise IOError("Please correct EPICS_BASE environment variable, "
-                  "the path {0} does not exist".format(EPICSBASE))
+EPICSBASE = epicscorelibs.path.base_path
+HOSTARCH  = epicscorelibs.config.get_config_var("EPICS_HOST_ARCH")
 
-
-HOSTARCH  = os.environ.get("EPICS_HOST_ARCH")
-if not HOSTARCH:
-    raise IOError("Please define EPICS_HOST_ARCH environment variable")
-
-# check EPICS version
-PRE315 = True
-if os.path.exists(os.path.join(EPICSBASE, 'include', 'compiler')):
-    PRE315 = False
+PRE315 = False
 
 # common libraries to link
 libraries = ['cas', 'ca', 'gdd', 'Com']
@@ -87,7 +75,7 @@ elif UNAME == 'Windows':
         else:
             dlls += ['dbCore.dll']
         for dll in dlls:
-            dllpath = os.path.join(EPICSBASE, 'bin', HOSTARCH, dll)
+            dllpath = os.path.join(epicscorelibs.path.lib_path, dll)
             if not os.path.exists(dllpath):
                 static = True
                 break
@@ -119,13 +107,13 @@ elif UNAME == 'Windows':
         CMPL = 'gcc'
 elif UNAME == 'Darwin':
     CMPL = 'clang'
-    extra_objects = [os.path.join(EPICSBASE, 'lib', HOSTARCH, 'lib%s.a'%lib) for lib in libraries]
+    extra_objects = [os.path.join(epicscorelibs.path.lib_path, 'lib%s.a'%lib) for lib in libraries]
     libraries = []
 elif UNAME == 'Linux':
     # necessary when EPICS is statically linked
-    extra_objects = [os.path.join(EPICSBASE, 'lib', HOSTARCH, 'lib%s.a'%lib) for lib in libraries]
+    extra_objects = [os.path.join(epicscorelibs.path.lib_path, 'lib%s.a'%lib) for lib in libraries]
     libraries = ['rt']
-    if subprocess.call('nm -u %s | grep -q rl_' % os.path.join(EPICSBASE, 'lib', HOSTARCH, 'libCom.a'), shell=True) == 0:
+    if subprocess.call('nm -u %s | grep -q rl_' % os.path.join(epicscorelibs.path.lib_path, 'libCom.a'), shell=True) == 0:
         libraries += ['readline']
     CMPL = 'gcc'
 elif UNAME == 'SunOS':
@@ -139,12 +127,10 @@ cas_module = Extension('pcaspy._cas',
                        sources  =[os.path.join('pcaspy','casdef.i'),
                                   os.path.join('pcaspy','pv.cpp'),
                                   os.path.join('pcaspy','channel.cpp'),],
-                       swig_opts=['-c++','-threads','-nodefaultdtor','-I%s'% os.path.join(EPICSBASE, 'include')],
+                       swig_opts=['-c++','-threads','-nodefaultdtor','-I%s'% epicscorelibs.path.include_path],
                        extra_compile_args=cflags,
-                       include_dirs = [ os.path.join(EPICSBASE, 'include'),
-                                        os.path.join(EPICSBASE, 'include', 'os', UNAME),
-                                        os.path.join(EPICSBASE, 'include', 'compiler', CMPL)],
-                       library_dirs = [ os.path.join(EPICSBASE, 'lib', HOSTARCH),],
+                       include_dirs = [ epicscorelibs.path.include_path],
+                       library_dirs = [ epicscorelibs.path.lib_path,],
                        libraries = libraries,
                        extra_link_args = lflags,
                        extra_objects = extra_objects,
@@ -152,7 +138,7 @@ cas_module = Extension('pcaspy._cas',
                        undef_macros  = umacros,)
 # other *NIX linker has runtime library path option
 if UNAME not in ['WIN32', 'Darwin', 'Linux']:
-    cas_module.runtime_library_dirs += os.path.join(EPICSBASE, 'lib', HOSTARCH),
+    cas_module.runtime_library_dirs += epicscorelibs.path.lib_path,
 
 long_description = open('README.rst').read()
 _version = load_module('_version', 'pcaspy/_version.py')
@@ -178,6 +164,7 @@ dist = setup (name = 'pcaspy',
                              'Programming Language :: Python :: 2',
                              'Programming Language :: Python :: 3',
                              ],
+              install_requires = ["epicscorelibs", "swig"]
               )
 
 # Re-run the build_py to ensure that swig generated py files are also copied
