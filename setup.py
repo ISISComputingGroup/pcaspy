@@ -161,6 +161,11 @@ if UNAME not in ["WIN32", "Darwin", "Linux"]:
 long_description = open("README.rst").read()
 _version = load_module("_version", "pcaspy/_version.py")
 
+requirements = [
+    "epicscorelibs", 
+    "epicscorelibs_pcas @ git+https://github.com/IsisComputingGroup/epicscorelibs_pcas@main",
+] 
+
 dist = setup(
     name="pcaspy",
     version=_version.__version__,
@@ -175,6 +180,7 @@ dist = setup(
     cmdclass={"build_py": build_py},
     license="BSD",
     platforms=["Windows", "Linux", "Mac OS X"],
+    install_requires=requirements,
     classifiers=[
         "Development Status :: 4 - Beta",
         "Environment :: Console",
