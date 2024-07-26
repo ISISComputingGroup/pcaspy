@@ -138,7 +138,13 @@ cas_module = Extension(
         os.path.join("pcaspy", "pv.cpp"),
         os.path.join("pcaspy", "channel.cpp"),
     ],
-    swig_opts=["-c++", "-threads", "-nodefaultdtor", "-I%s" % os.path.join(EPICSBASE, "include")],
+    swig_opts=[
+        "-c++",
+        "-threads",
+        "-nodefaultdtor",
+        "-I%s" % os.path.join(EPICSBASE, "include"),
+        "-I%s" % epicscorelibs_pcas.path.include_path,
+    ],
     extra_compile_args=cflags,
     include_dirs=[
         epicscorelibs.path.include_path,
@@ -162,9 +168,9 @@ long_description = open("README.rst").read()
 _version = load_module("_version", "pcaspy/_version.py")
 
 requirements = [
-    "epicscorelibs", 
+    "epicscorelibs",
     "epicscorelibs_pcas @ git+https://github.com/IsisComputingGroup/epicscorelibs_pcas@main",
-] 
+]
 
 dist = setup(
     name="pcaspy",
