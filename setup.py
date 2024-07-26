@@ -6,6 +6,7 @@ import os
 import platform
 import subprocess
 import sys
+import sysconfig
 
 import epicscorelibs.config
 import epicscorelibs.path
@@ -187,6 +188,7 @@ dist = setup(
     license="BSD",
     platforms=["Windows", "Linux", "Mac OS X"],
     install_requires=requirements,
+    setup_requires=requirements,
     classifiers=[
         "Development Status :: 4 - Beta",
         "Environment :: Console",
