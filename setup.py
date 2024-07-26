@@ -142,7 +142,7 @@ cas_module = Extension(
         "-c++",
         "-threads",
         "-nodefaultdtor",
-        "-I%s" % os.path.join(EPICSBASE, "include"),
+        "-I%s" % epicscorelibs.path.include_path,
         "-I%s" % epicscorelibs_pcas.path.include_path,
     ],
     extra_compile_args=cflags,
