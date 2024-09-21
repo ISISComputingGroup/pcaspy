@@ -170,7 +170,7 @@ _version = load_module("_version", "pcaspy/_version.py")
 
 requirements = [
     "epicscorelibs",
-    "epicscorelibs_pcas @ git+https://github.com/IsisComputingGroup/epicscorelibs_pcas@main",
+    'epicscorelibs_pcas @ https://github.com/ISISComputingGroup/epicscorelibs_pcas/releases/download/v0.0.1/epicscorelibs_pcas-0.0.1a0-cp311-cp311-win_amd64.whl ; python_version == "3.11"',
 ]
 
 dist = setup(
