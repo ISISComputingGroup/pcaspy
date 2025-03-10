@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "epicscorelibs", 
-	"swig", 
+    "epicscorelibs",
+	"swig",
 	"epicscorelibs_pcas @ git+https://github.com/IsisComputingGroup/epicscorelibs_pcas@main"
 ]
