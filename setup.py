@@ -184,7 +184,7 @@ dist = setup(
     platforms=["Windows", "Linux", "Mac OS X"],
     install_requires=[
         "epicscorelibs",
-        "epicscorelibs_pcas @ git+https://github.com/IsisComputingGroup/epicscorelibs_pcas@68b1cf74bf676be52144268197c58d556966e6a3",
+        "epicscorelibs_pcas @ git+https://github.com/IsisComputingGroup/epicscorelibs_pcas@main",
     ],
     classifiers=[
         "Development Status :: 4 - Beta",
