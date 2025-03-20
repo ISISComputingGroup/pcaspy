@@ -75,7 +75,8 @@ elif UNAME == "Windows":
             ("_CRT_NONSTDC_NO_DEPRECATE", "None"),
             ("EPICS_CALL_DLL", ""),
         ]
-        cflags += ["/Z7"]
+        cflags += ["/Z7", "/EHsc", "/Oy-", "/Gy-", "/GR", "/GL-"]
+        lflags += ["/DEBUG", "/LTCG:OFF", "/OPT:NOICF"]
         CMPL = "msvc"
     if HOSTARCH in ["win32-x86-static", "windows-x64-static"] or static:
         libraries += ["ws2_32", "user32", "advapi32"]
