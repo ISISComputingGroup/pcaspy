@@ -18,7 +18,7 @@
 
 /* pvExistReturn */
 %typemap(directorout) pvExistReturn {
-    if (PyInt_Check($1)) {
+    if (PyLong_Check($1)) {
         unsigned int val;
         int res = SWIG_AsVal_unsigned_SS_int($1, &val);
         if (SWIG_IsOK(res)) {
@@ -136,11 +136,11 @@ void pointerDestructor::run ( void * pUntyped )
 
 /* aitFloat64 array pointer output */
 %typemap (in) (aitFloat64 *dget, aitUint32 size) {
-    if (!PyInt_Check($input)) {
+    if (!PyLong_Check($input)) {
        PyErr_SetString(PyExc_ValueError, "Expecting an integer");
        return NULL;
     }
-    $2 = PyInt_AsLong($input);
+    $2 = PyLong_AsLong($input);
     if ($2 < 0) {
         PyErr_SetString(PyExc_ValueError, "Positive integer expected");
         return NULL;
@@ -167,7 +167,7 @@ void pointerDestructor::run ( void * pUntyped )
         for (i=0; i<size; i++)
         {
             PyObject *o = PySequence_GetItem($input, i);
-            strncpy ($1[i].fixed_string, PyString_AsString(o), AIT_FIXED_STRING_SIZE);
+            strncpy ($1[i].fixed_string, PyBytes_AsString(o), AIT_FIXED_STRING_SIZE);
             Py_XDECREF(o);
         }
     }
@@ -184,7 +184,7 @@ void pointerDestructor::run ( void * pUntyped )
         for (i=0; i<size; i++)
         {
             PyObject *o = PySequence_GetItem($input, i);
-            strncpy ($1[i].fixed_string, PyString_AsString(o), AIT_FIXED_STRING_SIZE);
+            strncpy ($1[i].fixed_string, PyBytes_AsString(o), AIT_FIXED_STRING_SIZE);
             Py_XDECREF(o);
         }
         $2 = new aitFixedStringDestructor();
@@ -200,7 +200,7 @@ void pointerDestructor::run ( void * pUntyped )
         for (i=0; i<size; i++)
         {
             PyObject *o = PySequence_GetItem($input, i);
-            $1[i] = PyString_AsString(o);
+            $1[i] = PyBytes_AsString(o);
             Py_XDECREF(o);
         }
     }
@@ -218,7 +218,7 @@ void pointerDestructor::run ( void * pUntyped )
         for (i=0; i<size; i++)
         {
             PyObject *o = PySequence_GetItem($input, i);
-            $1[i] = PyString_AsString(o);
+            $1[i] = PyBytes_AsString(o);
             Py_XDECREF(o);
         }
         $2 = new aitStringDestructor();
@@ -227,11 +227,11 @@ void pointerDestructor::run ( void * pUntyped )
 
 /* aitString array pointer output */
 %typemap (in) (aitString *dget, aitUint32 size) {
-    if (!PyInt_Check($input)) {
+    if (!PyLong_Check($input)) {
        PyErr_SetString(PyExc_ValueError, "Expecting an integer");
        return NULL;
     }
-    $2 = PyInt_AsLong($input);
+    $2 = PyLong_AsLong($input);
     if ($2 < 0) {
         PyErr_SetString(PyExc_ValueError, "Positive integer expected");
         return NULL;
@@ -242,7 +242,7 @@ void pointerDestructor::run ( void * pUntyped )
     Py_XDECREF($result);
     $result = PyList_New($2);
     for (aitUint32 i=0; i<$2; i++) {
-        PyObject *o = PyString_FromString($1[i].string());
+        PyObject *o = PyUnicode_FromString($1[i].string());
         PyList_SetItem($result, i, o);
     }
     delete [] $1;
@@ -259,7 +259,7 @@ void pointerDestructor::run ( void * pUntyped )
         for (i=0; i<size; i++)
         {
             PyObject *o = PySequence_GetItem($input, i);
-            $1[i] = (aitUint8) PyInt_AsLong(o);
+            $1[i] = (aitUint8) PyLong_AsLong(o);
             Py_XDECREF(o);
         }
     }
@@ -277,7 +277,7 @@ void pointerDestructor::run ( void * pUntyped )
         for (i=0; i<size; i++)
         {
             PyObject *o = PySequence_GetItem($input, i);
-            $1[i] = (aitUint8) PyInt_AsLong(o);
+            $1[i] = (aitUint8) PyLong_AsLong(o);
             Py_XDECREF(o);
         }
         $2 = new aitUint8Destructor();
@@ -286,11 +286,11 @@ void pointerDestructor::run ( void * pUntyped )
 
 /* aitUint8 array pointer output */
 %typemap (in) (aitUint8 *dget, aitUint32 size) {
-    if (!PyInt_Check($input)) {
+    if (!PyLong_Check($input)) {
        PyErr_SetString(PyExc_ValueError, "Expecting an integer");
        return NULL;
     }
-    $2 = PyInt_AsLong($input);
+    $2 = PyLong_AsLong($input);
     if ($2 < 0) {
         PyErr_SetString(PyExc_ValueError, "Positive integer expected");
         return NULL;
@@ -301,7 +301,7 @@ void pointerDestructor::run ( void * pUntyped )
     Py_XDECREF($result);
     $result = PyList_New($2);
     for (aitUint32 i=0; i<$2; i++) {
-        PyObject *o = PyInt_FromLong($1[i]);
+        PyObject *o = PyLong_FromLong($1[i]);
         PyList_SetItem($result, i, o);
     }
     delete [] $1;
